@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>PeerJS Data Communication Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.3.2/dist/peerjs.min.js"></script>
+</head>
+
+<body>
+  <h1>PeerJS Data Communication Test</h1>
+  <div>
+    <label for="peer-id">Your ID: </label>
+    <span id="peer-id"></span>
+  </div>
+  <div>
+    <label for="connect-to">Connect to ID: </label>
+    <input type="text" id="connect-to">
+    <button onclick="connect()">Connect</button>
+  </div>
+  <div>
+    <label for="message">Message: </label>
+    <input type="text" id="message">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+  <div>
+    <h2>Messages</h2>
+    <div id="messages"></div>
+  </div>
+
+  <script>
+    const peer = new Peer(
+      'client_1',
+      {
+        host: '!! FILL HERE !!',
+        port: 443,
+        path: '/peerjs',
+        secure: true,
+        debug: 3,
+        config: {
+          iceServers: [
+            { url: 'stun:stun.l.google.com:19302' },
+            // {
+            //     url: 'turn:TURN_SERVER_URL',  // Replace with your TURN server URL
+            //     username: 'USERNAME',        // Replace with your TURN server username
+            //     credential: 'CREDENTIAL'     // Replace with your TURN server credential
+            // }
+          ]
+        },
+        ipv6: false // Disable IPv6
+      });
+
+    peer.on('open', id => {
+      document.getElementById('peer-id').textContent = id;
+      console.log('My peer ID is: ' + id);
+    });
+
+    peer.on('connection', conn => {
+      conn.on('open', () => {
+
+        conn.on('data', data => {
+          console.log('Received:', data);
+          displayMessage('Received: ' + data);
+        });
+      });
+    });
+
+    function connect() {
+      const peerId = document.getElementById('connect-to').value;
+      const conn = peer.connect(peerId);
+      conn.on('open', () => {
+        conn.on('data', data => {
+          console.log('Received:', data);
+          displayMessage('Received: ' + data);
+        });
+      });
+      window.conn = conn;
+    }
+
+    function sendMessage() {
+      const message = document.getElementById('message').value;
+      if (window.conn && window.conn.open) {
+        window.conn.send(message);
+        console.log('Sent:', message);
+        displayMessage('Sent: ' + message);
+      } else {
+        console.log('Connection is not open.');
+      }
+    }
+
+    function displayMessage(message) {
+      const messagesDiv = document.getElementById('messages');
+      const messageElement = document.createElement('div');
+      messageElement.textContent = message;
+      messagesDiv.appendChild(messageElement);
+    }
+
+    peer.on('error', err => {
+      console.error(err);
+    });
+  </script>
+</body>
+
+</html>
